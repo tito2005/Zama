@@ -1,4 +1,5 @@
 import { useStore } from '@nanostores/react';
+import { Link } from '@remix-run/react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { chatStore } from '~/lib/stores/chat';
 import { classNames } from '~/utils/classNames';
@@ -11,20 +12,22 @@ export function Header() {
   return (
     <header
       className={classNames(
-        'flex items-center bg-bolt-elements-background-depth-1 p-5 border-b h-[var(--header-height)]',
+        'flex items-center bg-zama-surface p-5 border-b h-[var(--header-height)] shadow-sm',
         {
           'border-transparent': !chat.started,
-          'border-bolt-elements-borderColor': chat.started,
+          'border-zama-border': chat.started,
         },
       )}
     >
-      <div className="flex items-center gap-2 z-logo text-bolt-elements-textPrimary cursor-pointer">
-        <div className="i-ph:sidebar-simple-duotone text-xl" />
-        <a href="/" className="text-2xl font-semibold text-accent flex items-center">
-          <span className="i-bolt:logo-text?mask w-[46px] inline-block" />
-        </a>
+      <div className="flex items-center gap-3 z-logo text-zama-text-primary cursor-pointer">
+        <div className="h-8 w-8 bg-gradient-to-r from-zama-primary to-zama-accent rounded-lg flex items-center justify-center">
+          <span className="text-white font-bold text-lg">Z</span>
+        </div>
+        <Link to="/" className="text-2xl font-bold text-zama-text-primary flex items-center">
+          ZAMA
+        </Link>
       </div>
-      <span className="flex-1 px-4 truncate text-center text-bolt-elements-textPrimary">
+      <span className="flex-1 px-4 truncate text-center text-zama-text-primary">
         <ClientOnly>{() => <ChatDescription />}</ClientOnly>
       </span>
       {chat.started && (

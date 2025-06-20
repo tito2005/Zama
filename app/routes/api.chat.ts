@@ -1,59 +1,100 @@
 import { type ActionFunctionArgs } from '@remix-run/cloudflare';
-import { MAX_RESPONSE_SEGMENTS, MAX_TOKENS } from '~/lib/.server/llm/constants';
-import { CONTINUE_PROMPT } from '~/lib/.server/llm/prompts';
-import { streamText, type Messages, type StreamingOptions } from '~/lib/.server/llm/stream-text';
-import SwitchableStream from '~/lib/.server/llm/switchable-stream';
+import { streamGroqResponse, estimateTokens } from '~/lib/.server/llm/groq-model';
+import { requireUserSession, getUserById, updateTokenUsage, canUseTokens } from '~/lib/.server/auth/auth.server';
 
-export async function action(args: ActionFunctionArgs) {
-  return chatAction(args);
-}
-
-async function chatAction({ context, request }: ActionFunctionArgs) {
-  const { messages } = await request.json<{ messages: Messages }>();
-
-  const stream = new SwitchableStream();
-
+export async function action({ request }: ActionFunctionArgs) {
   try {
-    const options: StreamingOptions = {
-      toolChoice: 'none',
-      onFinish: async ({ text: content, finishReason }) => {
-        if (finishReason !== 'length') {
-          return stream.close();
+    const session = await requireUserSession(request);
+    const user = await getUserById(session.userId);
+    
+    if (!user) {
+      throw new Response('User not found', { status: 404 });
+    }
+
+    const { messages } = await request.json();
+    
+    if (!messages || !Array.isArray(messages)) {
+      throw new Response('Invalid messages format', { status: 400 });
+    }
+
+    // Estimate tokens for the request
+    const requestText = messages.map(m => m.content).join(' ');
+    const estimatedTokens = await estimateTokens(requestText);
+    
+    // Check if user has enough tokens
+    if (!await canUseTokens(user.id, estimatedTokens)) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Token limit exceeded. Please upgrade your plan or wait for daily reset.' 
+        }),
+        { 
+          status: 429,
+          headers: { 'Content-Type': 'application/json' }
         }
+      );
+    }
 
-        if (stream.switches >= MAX_RESPONSE_SEGMENTS) {
-          throw Error('Cannot continue message: Maximum segments reached');
-        }
+    // Stream response from Groq
+    const completion = await streamGroqResponse(messages, {
+      maxTokens: 4096,
+      temperature: 0.7,
+    });
 
-        const switchesLeft = MAX_RESPONSE_SEGMENTS - stream.switches;
-
-        console.log(`Reached max token limit (${MAX_TOKENS}): Continuing message (${switchesLeft} switches left)`);
-
-        messages.push({ role: 'assistant', content });
-        messages.push({ role: 'user', content: CONTINUE_PROMPT });
-
-        const result = await streamText(messages, context.cloudflare.env, options);
-
-        return stream.switchSource(result.toAIStream());
+    // Create a transform stream to track token usage
+    let totalTokens = 0;
+    const transformStream = new TransformStream({
+      transform(chunk, controller) {
+        // Estimate tokens in the response chunk
+        const chunkText = new TextDecoder().decode(chunk);
+        totalTokens += Math.ceil(chunkText.length / 4);
+        controller.enqueue(chunk);
       },
-    };
+      flush() {
+        // Update token usage when stream completes
+        updateTokenUsage(user.id, estimatedTokens + totalTokens).catch(console.error);
+      }
+    });
 
-    const result = await streamText(messages, context.cloudflare.env, options);
+    // Convert Groq stream to web stream
+    const encoder = new TextEncoder();
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of completion) {
+            const content = chunk.choices[0]?.delta?.content || '';
+            if (content) {
+              controller.enqueue(encoder.encode(content));
+            }
+          }
+          controller.close();
+        } catch (error) {
+          console.error('Streaming error:', error);
+          controller.error(error);
+        }
+      }
+    });
 
-    stream.switchSource(result.toAIStream());
-
-    return new Response(stream.readable, {
-      status: 200,
+    return new Response(readableStream.pipeThrough(transformStream), {
       headers: {
-        contentType: 'text/plain; charset=utf-8',
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
       },
     });
-  } catch (error) {
-    console.log(error);
 
-    throw new Response(null, {
-      status: 500,
-      statusText: 'Internal Server Error',
-    });
+  } catch (error) {
+    console.error('Chat API error:', error);
+    
+    if (error instanceof Response) {
+      return error;
+    }
+    
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   }
 }

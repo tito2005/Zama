@@ -1,0 +1,203 @@
+/* ZAMA Modern Animations */
+
+.zama-fade-in {
+  animation: zamaFadeIn 0.3s ease-out forwards;
+}
+
+.zama-slide-up {
+  animation: zamaSlideUp 0.4s ease-out forwards;
+}
+
+.zama-slide-down {
+  animation: zamaSlideDown 0.4s ease-out forwards;
+}
+
+.zama-scale-in {
+  animation: zamaScaleIn 0.2s ease-out forwards;
+}
+
+.zama-bounce-in {
+  animation: zamaBounceIn 0.5s ease-out forwards;
+}
+
+.zama-loading-pulse {
+  animation: zamaLoadingPulse 1.5s ease-in-out infinite;
+}
+
+.zama-gradient-shift {
+  background: var(--zama-gradient-primary);
+  background-size: 200% 200%;
+  animation: zamaGradientShift 3s ease infinite;
+}
+
+/* List animations */
+.zama-list-item {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: zamaListItemIn 0.3s ease-out forwards;
+}
+
+.zama-list-item:nth-child(1) { animation-delay: 0.1s; }
+.zama-list-item:nth-child(2) { animation-delay: 0.2s; }
+.zama-list-item:nth-child(3) { animation-delay: 0.3s; }
+.zama-list-item:nth-child(4) { animation-delay: 0.4s; }
+.zama-list-item:nth-child(5) { animation-delay: 0.5s; }
+
+/* Button hover effects */
+.zama-button-primary {
+  position: relative;
+  overflow: hidden;
+  background: var(--zama-gradient-primary);
+  transition: all 0.3s ease;
+}
+
+.zama-button-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+}
+
+.zama-button-primary:active {
+  transform: translateY(0);
+}
+
+.zama-button-secondary {
+  transition: all 0.2s ease;
+  border: 2px solid var(--zama-border);
+}
+
+.zama-button-secondary:hover {
+  border-color: var(--zama-primary);
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+/* Card hover effects */
+.zama-card {
+  transition: all 0.3s ease;
+  border: 1px solid var(--zama-border);
+}
+
+.zama-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border-color: var(--zama-primary);
+}
+
+/* Loading states */
+.zama-skeleton {
+  background: linear-gradient(90deg, var(--zama-border-light) 25%, var(--zama-border) 50%, var(--zama-border-light) 75%);
+  background-size: 200% 100%;
+  animation: zamaSkeletonLoading 1.5s infinite;
+}
+
+/* Keyframe definitions */
+@keyframes zamaFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zamaSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zamaSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zamaScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes zamaBounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes zamaLoadingPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes zamaGradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes zamaListItemIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zamaSkeletonLoading {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Responsive animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
